@@ -1,0 +1,310 @@
+--- show running-config ---
+Fri Jul 26 23:46:42.970 AST
+Building configuration...
+!! IOS XR Configuration 7.3.2
+!! Last configuration change at Fri Jul 26 22:11:40 2024 by admin
+!
+!*********************************!
+! ASR9K_RPDR_PE-01 - 10.210.14.49 !
+!*********************************!
+hostname ASR9K_RPDR_PE-01
+snmp-server traps alarm
+clock timezone AST America/Puerto_Rico
+banner exec ^c
+#################################################################
+#                                                               #
+#                          PLEASE NOTE                          #
+#                                                               #
+#################################################################
+#                                                               #
+#     1) ALL CHANGES MUST BE APPROVED THROUGH CHANGE CONTROL    #
+#        COMMITEE                                               #
+#                                                               #
+#     2) ALL DOCUMENTATION MUST BE UPDATED TO REFLECT CHANGES   #
+#                                                               #
+#     3) PLEASE CONTACT THE PRT NOC BEFORE AND AFTER MAKING ANY #
+#        MAJOR CHANGES                                          #
+#                                                               #
+#     4) ALL KEYSTROKES ARE LOGGED FOR AUDIT REVIEW             #
+#                                                               #
+#################################################################
+^c        
+banner motd "Hello there! Hoping you are having a great day
+... Welcome to '$(hostname)',
+your favorite CISCO.IOSXR.IOSXR Sandbox"
+banner login ^c
+********************************************************
+               THIS IS A SECURED DEVICE
+               AUTHORIZED PERSONEL ONLY
+********************************************************
+Unauthorized use is prohibited by law and may be subject
+to civil and/or  criminal penalties.  The system may be
+logged  or  monitored  without  further  notice  and the
+resulting  logs  may  be  used  as  evidence  in  court.
+********************************************************
+^c
+domain name hiTech007.com
+username admin
+ group root-lr
+ group cisco-support
+ secret 10 $6$F3kfY1/w8tjGCY1.$MC31GMZoTQZw/QaXJACQZYJltYllPSYCC9LRzzhxb5Zn9X.mWWUezTo/kXORs3JsM/0ttm3peLBijGR83osQ9/
+!
+grpc
+ port 57777
+ no-tls
+ address-family ipv4
+ max-request-total 32
+!
+vrf INTERNET
+ description Uplink to Internet (GENERIC)
+ address-family ipv4 unicast
+  import route-target
+   10396:10396
+  !
+  export route-target
+   10396:10396
+  !
+ !
+!
+line console
+ exec-timeout 0 0
+ absolute-timeout 0
+ session-timeout 0
+!
+line default
+ exec-timeout 0 0
+ absolute-timeout 0
+ session-timeout 0
+!
+snmp-server community public123 RO
+snmp-server community private123 RW
+snmp-server traps rf
+snmp-server traps bfd
+snmp-server traps ntp
+snmp-server traps copy-complete
+snmp-server traps snmp linkup
+snmp-server traps snmp linkdown
+snmp-server traps snmp coldstart
+snmp-server traps snmp warmstart
+snmp-server traps snmp authentication
+snmp-server traps flash removal
+snmp-server traps flash insertion
+snmp-server traps power
+snmp-server traps config
+snmp-server traps entity
+snmp-server traps selective-vrf-download role-change
+snmp-server traps syslog
+snmp-server traps system
+snmp-server location warsaw
+ntp
+ server 8.8.8.8
+!
+call-home
+ service active
+ contact smart-licensing
+ profile CiscoTAC-1
+  active
+  destination transport-method http
+ !
+!
+netconf-yang agent
+ ssh
+!
+interface Loopback0
+ ipv4 address 12.168.1.5 255.255.255.0
+!
+interface Loopback11
+ ipv4 address 10.1.0.1 255.255.255.0
+!
+interface Loopback22
+ ipv4 address 10.2.0.1 255.255.255.0
+!
+interface Loopback33
+ ipv4 address 10.3.0.1 255.255.255.0
+!
+interface Loopback100
+ description CHANGED_BY_ANSIBLE
+ ipv4 address 1.1.1.100 255.255.255.255
+!
+interface Loopback102
+!
+interface Loopback555
+ description PRUEBA_KV
+!
+interface MgmtEth0/RP0/CPU0/0
+ ipv4 address 10.10.20.175 255.255.255.0
+!
+interface GigabitEthernet0/0/0/0
+ description TEST
+!
+interface GigabitEthernet0/0/0/1
+ description test
+ shutdown
+!
+interface GigabitEthernet0/0/0/2
+ description test
+ shutdown
+!
+interface GigabitEthernet0/0/0/3
+ description test
+ shutdown
+!
+interface GigabitEthernet0/0/0/4
+ shutdown
+!
+interface GigabitEthernet0/0/0/5
+ shutdown
+!
+interface GigabitEthernet0/0/0/6
+ shutdown
+!
+prefix-set BMW_IN
+end-set
+!
+prefix-set TEST1_IN
+  10.10.20.0/22 le 28
+end-set
+!
+prefix-set TEST_OUT
+end-set
+!
+prefix-set TEST1_OUT
+  10.200.0.0/22 le 30
+end-set
+!
+prefix-set testing123
+end-set
+!
+prefix-set testing123_OUT
+end-set
+!
+prefix-set AS4209670000_V4_ROUTE
+  1.2.3.0/24,
+  31.2.3.0/24,
+  32.3.4.0/24,
+  33.3.4.0/24,
+  10.2.3.0/24,
+  34.4.0.0/22,
+  34.4.4.0/22,
+  10.7.7.7/32,
+  1.1.1.1/32,
+  8.8.4.4/32
+end-set
+!
+router static
+ address-family ipv4 unicast
+  0.0.0.0/0 10.10.20.254
+  0.0.0.0/0 MgmtEth0/RP0/CPU0/0 10.10.20.254
+ !
+!
+router isis 1
+ segment-routing global-block 18000 19999
+ address-family ipv4 unicast
+  metric-style wide
+  segment-routing mpls
+ !
+!
+router isis 100
+ address-family ipv4 unicast
+  segment-routing mpls sr-prefer
+ !
+ interface Loopback0
+  address-family ipv4 unicast
+   prefix-sid index 1
+  !
+ !
+!
+snmp-server traps isis all
+router ospf 1
+ summary-prefix 10.0.0.0/8
+ area 0
+  range 192.168.0.0/22 advertise
+  interface Loopback0
+  !
+  interface GigabitEthernet0/0/0/0
+  !
+ !
+ area 0.0.0.50
+  interface Loopback33
+  !
+ !
+ area 0.0.0.100
+  interface Loopback11
+  !
+ !
+ area 0.0.0.200
+  interface Loopback22
+  !
+ !
+!
+router ospf 1000
+!
+snmp-server traps bgp
+router bgp 100
+ mpls activate
+  interface GigabitEthernet0/0/0/1
+  interface GigabitEthernet0/0/0/2
+  interface GigabitEthernet0/0/0/3
+  interface GigabitEthernet0/0/0/4
+ !
+ neighbor-group test
+  remote-as 65889
+  bfd fast-detect
+  bfd multiplier 3
+  bfd minimum-interval 3
+  password encrypted 132305170E082427
+  address-family ipv6 unicast
+  !
+ !
+!
+snmp-server traps hsrp
+snmp-server traps vrrp events
+snmp-server traps mpls traffic-eng up
+snmp-server traps mpls traffic-eng down
+snmp-server traps mpls traffic-eng reroute
+snmp-server traps mpls traffic-eng reoptimize
+snmp-server traps mpls frr all
+snmp-server traps mpls frr protected
+snmp-server traps mpls frr unprotected
+snmp-server traps mpls ldp up
+snmp-server traps mpls ldp down
+snmp-server traps mpls ldp threshold
+snmp-server traps pim neighbor-change
+snmp-server traps pim invalid-message-received
+snmp-server traps pim rp-mapping-change
+snmp-server traps pim interface-state-change
+snmp-server traps msdp peer-state-change
+segment-routing
+ global-block 16000 17000
+!
+xml agent tty
+ iteration off
+!
+snmp-server traps sensor
+netconf agent tty
+!
+snmp-server traps ospf lsa lsa-maxage
+snmp-server traps ospf lsa lsa-originate
+snmp-server traps ospf errors bad-packet
+snmp-server traps ospf errors authentication-failure
+snmp-server traps ospf errors config-error
+snmp-server traps ospf errors virt-bad-packet
+snmp-server traps ospf errors virt-authentication-failure
+snmp-server traps ospf errors virt-config-error
+snmp-server traps ospf retransmit packets
+snmp-server traps ospf retransmit virt-packets
+snmp-server traps ospf state-change if-state-change
+snmp-server traps ospf state-change neighbor-state-change
+snmp-server traps ospf state-change virtif-state-change
+snmp-server traps ospf state-change virtneighbor-state-change
+snmp-server traps pki
+snmp-server traps ipsec tunnel stop
+snmp-server traps ipsec tunnel start
+snmp-server traps isakmp tunnel stop
+snmp-server traps isakmp tunnel start
+ssh server v2
+ssh server vrf default
+ssh server netconf vrf default
+snmp-server traps ipsla
+end
+
