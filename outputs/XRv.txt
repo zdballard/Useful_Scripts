@@ -1,13 +1,13 @@
 --- show running-config ---
-Fri Jul 26 23:46:42.970 AST
+Sun Aug  4 09:40:29.550 AST
 Building configuration...
 !! IOS XR Configuration 7.3.2
-!! Last configuration change at Fri Jul 26 22:11:40 2024 by admin
+!! Last configuration change at Sun Aug  4 08:52:54 2024 by admin
 !
 !*********************************!
 ! ASR9K_RPDR_PE-01 - 10.210.14.49 !
 !*********************************!
-hostname ASR9K_RPDR_PE-01
+hostname XRv
 snmp-server traps alarm
 clock timezone AST America/Puerto_Rico
 banner exec ^c
@@ -55,6 +55,40 @@ grpc
  address-family ipv4
  max-request-total 32
 !
+vrf oam
+ address-family ipv4 unicast
+  import route-target
+   5050:10
+  !
+  export route-target
+   5050:10
+  !
+ !
+!
+vrf s1c
+ address-family ipv4 unicast
+  import route-target
+   5050:200
+  !
+  export route-target
+   5050:200
+  !
+ !
+!
+vrf Abis
+ address-family ipv4 unicast
+  import route-target
+   5050:100
+  !
+  export route-target
+   5050:100
+  !
+ !
+!
+vrf test
+!
+vrf xrvf
+!
 vrf INTERNET
  description Uplink to Internet (GENERIC)
  address-family ipv4 unicast
@@ -65,6 +99,8 @@ vrf INTERNET
    10396:10396
   !
  !
+!
+address-family ipv4 unicast
 !
 line console
  exec-timeout 0 0
@@ -110,8 +146,24 @@ call-home
 netconf-yang agent
  ssh
 !
+ipv4 access-list IPv4-ACL
+ 10 deny tcp any 198.51.100.0 0.0.0.255
+ 20 permit tcp any any
+!
+interface Bundle-Ether1
+ description to_Agg2:bundle-ether1
+ ipv4 address 172.28.0.123 255.255.255.254
+!
+interface Bundle-Ether2
+ description to_Acc1:ae2
+ ipv4 address 172.28.0.9 255.255.255.254
+!
+interface Bundle-Ether10
+ ipv6 address 2a02:b60:2000:1002::2a/126
+!
 interface Loopback0
- ipv4 address 12.168.1.5 255.255.255.0
+ description Loopback Interface
+ ipv4 address 192.168.1.1 255.255.255.0
 !
 interface Loopback11
  ipv4 address 10.1.0.1 255.255.255.0
@@ -122,28 +174,54 @@ interface Loopback22
 interface Loopback33
  ipv4 address 10.3.0.1 255.255.255.0
 !
+interface Loopback55
+ description Agg1_loopback_main
+ ipv4 address 172.29.0.50 255.255.255.255
+!
+interface Loopback66
+ description for router visibility
+ vrf oam
+ ipv4 address 172.29.0.50 255.255.255.255
+!
+interface Loopback75
+ description Loopback Interface
+ ipv4 address 192.168.1.1 255.255.255.0
+!
+interface Loopback77
+ ipv4 address 100.100.100.100 255.255.255.255
+!
 interface Loopback100
  description CHANGED_BY_ANSIBLE
  ipv4 address 1.1.1.100 255.255.255.255
+!
+interface Loopback101
+ ipv4 address 192.0.2.18 255.255.255.0
+ ipv4 address 203.0.113.4 255.255.255.0 secondary
+ ipv6 address 2001:db8:f00d::1/64
 !
 interface Loopback102
 !
 interface Loopback555
  description PRUEBA_KV
 !
+interface Loopback777
+!
+interface Loopback1000
+!
 interface MgmtEth0/RP0/CPU0/0
  ipv4 address 10.10.20.175 255.255.255.0
 !
 interface GigabitEthernet0/0/0/0
  description TEST
+ ipv4 address 192.0.2.1 255.255.255.0
 !
 interface GigabitEthernet0/0/0/1
- description test
- shutdown
+ description to_Agg2:ge-0/0/1
+ bundle id 1 mode on
 !
 interface GigabitEthernet0/0/0/2
- description test
- shutdown
+ description to_Acc1:ge-0/0/2
+ bundle id 2 mode on
 !
 interface GigabitEthernet0/0/0/3
  description test
@@ -152,11 +230,17 @@ interface GigabitEthernet0/0/0/3
 interface GigabitEthernet0/0/0/4
  shutdown
 !
-interface GigabitEthernet0/0/0/5
- shutdown
+interface GigabitEthernet0/0/0/5.100
+ description testsite1_2G
+ vrf Abis
+ ipv4 address 10.1.0.25 255.255.255.252
+ encapsulation dot1q 100
 !
-interface GigabitEthernet0/0/0/6
- shutdown
+interface GigabitEthernet0/0/0/5.200
+ description testsite1_s1c
+ vrf s1c
+ ipv4 address 10.2.0.65 255.255.255.252
+ encapsulation dot1q 200
 !
 prefix-set BMW_IN
 end-set
@@ -191,27 +275,28 @@ prefix-set AS4209670000_V4_ROUTE
   8.8.4.4/32
 end-set
 !
+route-policy DROP_ALL
+  drop
+end-policy
+!
 router static
  address-family ipv4 unicast
   0.0.0.0/0 10.10.20.254
   0.0.0.0/0 MgmtEth0/RP0/CPU0/0 10.10.20.254
  !
+ vrf test
+ !
 !
 router isis 1
+ is-type level-2-only
+ net 49.0002.0000.0000.0000.00
  segment-routing global-block 18000 19999
  address-family ipv4 unicast
   metric-style wide
   segment-routing mpls
  !
-!
-router isis 100
- address-family ipv4 unicast
-  segment-routing mpls sr-prefer
- !
  interface Loopback0
-  address-family ipv4 unicast
-   prefix-sid index 1
-  !
+  passive
  !
 !
 snmp-server traps isis all
@@ -237,23 +322,76 @@ router ospf 1
   !
  !
 !
+router ospf 100
+ router-id 172.29.0.50
+ address-family ipv4 unicast
+ area 0.0.0.100
+  interface Bundle-Ether1
+   cost 1000
+   network point-to-point
+  !
+  interface Bundle-Ether2
+   cost 1000
+   network point-to-point
+  !
+  interface Loopback55
+   passive enable
+  !
+ !
+!
+router ospf 777
+ area 0.0.0.0
+  interface Loopback777
+  !
+ !
+!
+router ospf 888
+!
 router ospf 1000
 !
-snmp-server traps bgp
-router bgp 100
- mpls activate
-  interface GigabitEthernet0/0/0/1
-  interface GigabitEthernet0/0/0/2
-  interface GigabitEthernet0/0/0/3
-  interface GigabitEthernet0/0/0/4
+router ospf 1990
+!
+router ospf 9910
+ area 0.0.0.0
+  interface Loopback77
+  !
  !
- neighbor-group test
-  remote-as 65889
-  bfd fast-detect
-  bfd multiplier 3
-  bfd minimum-interval 3
-  password encrypted 132305170E082427
-  address-family ipv6 unicast
+!
+snmp-server traps bgp
+router bgp 5050
+ bgp router-id 172.29.0.50
+ address-family vpnv4 unicast
+ !
+ neighbor-group acc
+  remote-as 5050
+  cluster-id 172.29.0.50
+  update-source Loopback55
+  address-family vpnv4 unicast
+   route-reflector-client
+  !
+ !
+ neighbor 172.29.0.152
+  use neighbor-group acc
+ !
+ neighbor 172.29.0.180
+  use neighbor-group acc
+ !
+ vrf oam
+  rd 5050:10
+  address-family ipv4 unicast
+   redistribute connected
+  !
+ !
+ vrf s1c
+  rd 5050:200
+  address-family ipv4 unicast
+   redistribute connected
+  !
+ !
+ vrf Abis
+  rd 5050:100
+  address-family ipv4 unicast
+   redistribute connected
   !
  !
 !
@@ -269,6 +407,13 @@ snmp-server traps mpls frr unprotected
 snmp-server traps mpls ldp up
 snmp-server traps mpls ldp down
 snmp-server traps mpls ldp threshold
+mpls ldp
+ router-id 20.0.0.1
+ interface Bundle-Ether1
+ !
+ interface Bundle-Ether2
+ !
+!
 snmp-server traps pim neighbor-change
 snmp-server traps pim invalid-message-received
 snmp-server traps pim rp-mapping-change
